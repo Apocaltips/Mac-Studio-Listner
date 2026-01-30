@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Office Recorder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=Space+Grotesk:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #0f172a;
+        --muted: #475569;
+        --accent: #f97316;
+        --accent-2: #2563eb;
+        --bg: #f8fafc;
+        --card: rgba(255, 255, 255, 0.82);
+        --glass: rgba(15, 23, 42, 0.06);
+        --shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
+        color: var(--ink);
+        min-height: 100vh;
+        background: radial-gradient(circle at 10% 10%, #fef3c7 0%, transparent 45%),
+          radial-gradient(circle at 90% 20%, #dbeafe 0%, transparent 50%),
+          radial-gradient(circle at 50% 90%, #fee2e2 0%, transparent 45%),
+          var(--bg);
+      }
+
+      .shell {
+        padding: 48px 24px 80px;
+        max-width: 1100px;
+        margin: 0 auto;
+        display: grid;
+        gap: 24px;
+      }
+
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+
+      .title {
+        font-family: "Fraunces", serif;
+        font-size: clamp(2.6rem, 4vw, 3.8rem);
+        margin: 0;
+      }
+
+      .subtitle {
+        margin: 8px 0 0;
+        color: var(--muted);
+      }
+
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        border-radius: 999px;
+        background: var(--glass);
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: #dc2626;
+        box-shadow: 0 0 0 6px rgba(220, 38, 38, 0.12);
+      }
+
+      .dot.live {
+        background: #16a34a;
+        box-shadow: 0 0 0 6px rgba(22, 163, 74, 0.12);
+      }
+
+      .grid {
+        display: grid;
+        gap: 24px;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      }
+
+      .card {
+        background: var(--card);
+        border-radius: 24px;
+        padding: 24px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(10px);
+      }
+
+      .card h2 {
+        font-family: "Fraunces", serif;
+        margin: 0 0 12px;
+      }
+
+      .btn {
+        border: none;
+        padding: 14px 20px;
+        border-radius: 14px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .btn:active {
+        transform: translateY(1px);
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, var(--accent), #fb7185);
+        color: white;
+        box-shadow: 0 18px 30px rgba(249, 115, 22, 0.25);
+      }
+
+      .btn-secondary {
+        background: linear-gradient(135deg, var(--accent-2), #38bdf8);
+        color: white;
+        box-shadow: 0 18px 30px rgba(37, 99, 235, 0.2);
+      }
+
+      .btn-ghost {
+        background: transparent;
+        border: 1px solid rgba(15, 23, 42, 0.1);
+        color: var(--ink);
+      }
+
+      .stack {
+        display: grid;
+        gap: 12px;
+      }
+
+      .meta {
+        display: grid;
+        gap: 6px;
+        font-size: 0.95rem;
+        color: var(--muted);
+      }
+
+      .summary {
+        max-height: 320px;
+        overflow: auto;
+        padding: 16px;
+        background: rgba(15, 23, 42, 0.04);
+        border-radius: 16px;
+        white-space: pre-wrap;
+        font-size: 0.95rem;
+      }
+
+      .footer {
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      @media (max-width: 720px) {
+        header {
+          align-items: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header>
+        <div>
+          <h1 class="title">Office Recorder</h1>
+          <p class="subtitle">Always-on capture with end-of-day summaries.</p>
+        </div>
+        <div class="status-pill">
+          <span id="status-dot" class="dot"></span>
+          <span id="status-text">Checking status…</span>
+        </div>
+      </header>
+
+      <section class="grid">
+        <div class="card stack">
+          <h2>Recording Control</h2>
+          <button id="start-btn" class="btn btn-primary">Start Recording</button>
+          <button id="stop-btn" class="btn btn-ghost">Stop Recording</button>
+          <div class="meta" id="recording-meta">
+            <div>Date: <span id="rec-date">—</span></div>
+            <div>Started: <span id="rec-started">—</span></div>
+            <div>Segments: <span id="rec-count">—</span></div>
+          </div>
+        </div>
+
+        <div class="card stack">
+          <h2>Daily Pipeline</h2>
+          <button id="transcribe-btn" class="btn btn-secondary">Transcribe Today</button>
+          <button id="summarize-btn" class="btn btn-ghost">Summarize Today</button>
+          <button id="fetch-summary-btn" class="btn btn-ghost">Load Latest Summary</button>
+          <div class="meta" id="pipeline-meta">
+            <div>Pipeline status: <span id="pipeline-status">Idle</span></div>
+          </div>
+        </div>
+
+        <div class="card stack">
+          <h2>Latest Summary</h2>
+          <div id="summary-output" class="summary">No summary loaded yet.</div>
+        </div>
+      </section>
+
+      <p class="footer">Run locally on the Mac Studio. Configure mics and models in .env.</p>
+    </div>
+
+    <script>
+      const statusDot = document.getElementById("status-dot");
+      const statusText = document.getElementById("status-text");
+      const recDate = document.getElementById("rec-date");
+      const recStarted = document.getElementById("rec-started");
+      const recCount = document.getElementById("rec-count");
+      const pipelineStatus = document.getElementById("pipeline-status");
+      const summaryOutput = document.getElementById("summary-output");
+
+      const today = new Date().toISOString().slice(0, 10);
+
+      async function api(path, opts = {}) {
+        const res = await fetch(path, {
+          headers: { "Content-Type": "application/json" },
+          ...opts,
+        });
+        if (!res.ok) {
+          throw new Error(await res.text());
+        }
+        return res.json();
+      }
+
+      function setStatus(running) {
+        statusDot.classList.toggle("live", running);
+        statusText.textContent = running ? "Recording" : "Idle";
+      }
+
+      async function refreshStatus() {
+        try {
+          const data = await api("/api/recording/status");
+          setStatus(data.running);
+          recDate.textContent = data.date || "—";
+          recStarted.textContent = data.started_at || "—";
+          recCount.textContent = data.file_count ?? "—";
+        } catch (err) {
+          statusText.textContent = "Offline";
+          console.error(err);
+        }
+      }
+
+      document.getElementById("start-btn").addEventListener("click", async () => {
+        pipelineStatus.textContent = "Starting…";
+        await api("/api/recording/start", {
+          method: "POST",
+          body: JSON.stringify({ date: today }),
+        });
+        pipelineStatus.textContent = "Recording started";
+        refreshStatus();
+      });
+
+      document.getElementById("stop-btn").addEventListener("click", async () => {
+        pipelineStatus.textContent = "Stopping…";
+        await api("/api/recording/stop", { method: "POST" });
+        pipelineStatus.textContent = "Recording stopped";
+        refreshStatus();
+      });
+
+      document.getElementById("transcribe-btn").addEventListener("click", async () => {
+        pipelineStatus.textContent = "Transcribing…";
+        await api(`/api/day/${today}/transcribe`, { method: "POST" });
+        pipelineStatus.textContent = "Transcription queued";
+      });
+
+      document.getElementById("summarize-btn").addEventListener("click", async () => {
+        pipelineStatus.textContent = "Summarizing…";
+        await api(`/api/day/${today}/summarize`, {
+          method: "POST",
+          body: JSON.stringify({ send_to_openclaw: false }),
+        });
+        pipelineStatus.textContent = "Summary queued";
+      });
+
+      document.getElementById("fetch-summary-btn").addEventListener("click", async () => {
+        pipelineStatus.textContent = "Loading summary…";
+        try {
+          const data = await api(`/api/day/${today}/summary`);
+          summaryOutput.textContent = JSON.stringify(data.summary, null, 2);
+          pipelineStatus.textContent = "Summary loaded";
+        } catch (err) {
+          summaryOutput.textContent = "Summary not found yet.";
+          pipelineStatus.textContent = "Summary missing";
+        }
+      });
+
+      refreshStatus();
+      setInterval(refreshStatus, 15000);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Data
+OfficeRecorder/
+backend/.env
+
+# Beads local DBs
+.beads/*.db
+
+# Logs
+*.log
