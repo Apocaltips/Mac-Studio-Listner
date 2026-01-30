@@ -17,11 +17,19 @@ case "$CMD" in
   status)
     curl -sS "$BASE_URL/api/recording/status"
     ;;
+  schedule-status)
+    curl -sS "$BASE_URL/api/schedule/status"
+    ;;
   transcribe)
     curl -sS -X POST "$BASE_URL/api/day/$DATE/transcribe"
     ;;
   summarize)
     curl -sS -X POST "$BASE_URL/api/day/$DATE/summarize" \
+      -H "Content-Type: application/json" \
+      -d '{"send_to_openclaw": false}'
+    ;;
+  pipeline)
+    curl -sS -X POST "$BASE_URL/api/day/$DATE/pipeline" \
       -H "Content-Type: application/json" \
       -d '{"send_to_openclaw": false}'
     ;;
@@ -31,7 +39,7 @@ case "$CMD" in
       -d '{"send_to_openclaw": true}'
     ;;
   *)
-    echo "Usage: office_recorder_ctl.sh {start|stop|status|transcribe|summarize|send-summary} [YYYY-MM-DD]" >&2
+    echo "Usage: office_recorder_ctl.sh {start|stop|status|schedule-status|transcribe|summarize|pipeline|send-summary} [YYYY-MM-DD]" >&2
     exit 1
     ;;
 esac

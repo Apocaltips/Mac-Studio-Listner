@@ -183,7 +183,7 @@
         </div>
         <div class="status-pill">
           <span id="status-dot" class="dot"></span>
-          <span id="status-text">Checking status…</span>
+          <span id="status-text">Checking status...</span>
         </div>
       </header>
 
@@ -193,9 +193,9 @@
           <button id="start-btn" class="btn btn-primary">Start Recording</button>
           <button id="stop-btn" class="btn btn-ghost">Stop Recording</button>
           <div class="meta" id="recording-meta">
-            <div>Date: <span id="rec-date">—</span></div>
-            <div>Started: <span id="rec-started">—</span></div>
-            <div>Segments: <span id="rec-count">—</span></div>
+            <div>Date: <span id="rec-date">-</span></div>
+            <div>Started: <span id="rec-started">-</span></div>
+            <div>Segments: <span id="rec-count">-</span></div>
           </div>
         </div>
 
@@ -203,6 +203,7 @@
           <h2>Daily Pipeline</h2>
           <button id="transcribe-btn" class="btn btn-secondary">Transcribe Today</button>
           <button id="summarize-btn" class="btn btn-ghost">Summarize Today</button>
+          <button id="pipeline-btn" class="btn btn-ghost">Run Full Pipeline</button>
           <button id="fetch-summary-btn" class="btn btn-ghost">Load Latest Summary</button>
           <div class="meta" id="pipeline-meta">
             <div>Pipeline status: <span id="pipeline-status">Idle</span></div>
@@ -212,6 +213,16 @@
         <div class="card stack">
           <h2>Latest Summary</h2>
           <div id="summary-output" class="summary">No summary loaded yet.</div>
+        </div>
+
+        <div class="card stack">
+          <h2>Schedule</h2>
+          <div class="meta" id="schedule-meta">
+            <div>Enabled: <span id="schedule-enabled">-</span></div>
+            <div>Active: <span id="schedule-active">-</span></div>
+            <div>Window: <span id="schedule-window">-</span></div>
+            <div>Days: <span id="schedule-days">-</span></div>
+          </div>
         </div>
       </section>
 
@@ -226,6 +237,10 @@
       const recCount = document.getElementById("rec-count");
       const pipelineStatus = document.getElementById("pipeline-status");
       const summaryOutput = document.getElementById("summary-output");
+      const scheduleEnabled = document.getElementById("schedule-enabled");
+      const scheduleActive = document.getElementById("schedule-active");
+      const scheduleWindow = document.getElementById("schedule-window");
+      const scheduleDays = document.getElementById("schedule-days");
 
       const today = new Date().toISOString().slice(0, 10);
 
@@ -249,9 +264,15 @@
         try {
           const data = await api("/api/recording/status");
           setStatus(data.running);
-          recDate.textContent = data.date || "—";
-          recStarted.textContent = data.started_at || "—";
-          recCount.textContent = data.file_count ?? "—";
+          recDate.textContent = data.date || "-";
+          recStarted.textContent = data.started_at || "-";
+          recCount.textContent = data.file_count ?? "-";
+
+          const schedule = await api("/api/schedule/status");
+          scheduleEnabled.textContent = schedule.enabled ? "Yes" : "No";
+          scheduleActive.textContent = schedule.active ? "Active" : "Idle";
+          scheduleWindow.textContent = `${schedule.start} -> ${schedule.end}`;
+          scheduleDays.textContent = (schedule.days || []).join(", ");
         } catch (err) {
           statusText.textContent = "Offline";
           console.error(err);
@@ -259,7 +280,7 @@
       }
 
       document.getElementById("start-btn").addEventListener("click", async () => {
-        pipelineStatus.textContent = "Starting…";
+        pipelineStatus.textContent = "Starting...";
         await api("/api/recording/start", {
           method: "POST",
           body: JSON.stringify({ date: today }),
@@ -269,20 +290,20 @@
       });
 
       document.getElementById("stop-btn").addEventListener("click", async () => {
-        pipelineStatus.textContent = "Stopping…";
+        pipelineStatus.textContent = "Stopping...";
         await api("/api/recording/stop", { method: "POST" });
         pipelineStatus.textContent = "Recording stopped";
         refreshStatus();
       });
 
       document.getElementById("transcribe-btn").addEventListener("click", async () => {
-        pipelineStatus.textContent = "Transcribing…";
+        pipelineStatus.textContent = "Transcribing...";
         await api(`/api/day/${today}/transcribe`, { method: "POST" });
         pipelineStatus.textContent = "Transcription queued";
       });
 
       document.getElementById("summarize-btn").addEventListener("click", async () => {
-        pipelineStatus.textContent = "Summarizing…";
+        pipelineStatus.textContent = "Summarizing...";
         await api(`/api/day/${today}/summarize`, {
           method: "POST",
           body: JSON.stringify({ send_to_openclaw: false }),
@@ -290,8 +311,17 @@
         pipelineStatus.textContent = "Summary queued";
       });
 
+      document.getElementById("pipeline-btn").addEventListener("click", async () => {
+        pipelineStatus.textContent = "Running pipeline...";
+        await api(`/api/day/${today}/pipeline`, {
+          method: "POST",
+          body: JSON.stringify({ send_to_openclaw: false }),
+        });
+        pipelineStatus.textContent = "Pipeline queued";
+      });
+
       document.getElementById("fetch-summary-btn").addEventListener("click", async () => {
-        pipelineStatus.textContent = "Loading summary…";
+        pipelineStatus.textContent = "Loading summary...";
         try {
           const data = await api(`/api/day/${today}/summary`);
           summaryOutput.textContent = JSON.stringify(data.summary, null, 2);
@@ -307,3 +337,4 @@
     </script>
   </body>
 </html>
+

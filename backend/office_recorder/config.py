@@ -36,6 +36,42 @@ def _env_bool(name: str, default: bool) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
+def _parse_days(value: str) -> list[int]:
+    if not value:
+        return []
+    mapping = {
+        "mon": 0,
+        "monday": 0,
+        "tue": 1,
+        "tues": 1,
+        "tuesday": 1,
+        "wed": 2,
+        "wednesday": 2,
+        "thu": 3,
+        "thurs": 3,
+        "thursday": 3,
+        "fri": 4,
+        "friday": 4,
+        "sat": 5,
+        "saturday": 5,
+        "sun": 6,
+        "sunday": 6,
+    }
+    days: list[int] = []
+    for raw in value.split(","):
+        token = raw.strip().lower()
+        if not token:
+            continue
+        if token.isdigit():
+            day = int(token)
+            if 0 <= day <= 6:
+                days.append(day)
+            continue
+        if token in mapping:
+            days.append(mapping[token])
+    return sorted(set(days))
+
+
 @dataclass(frozen=True)
 class AppConfig:
     data_dir: Path
@@ -63,6 +99,19 @@ class AppConfig:
     llm_api_key: str | None
     llm_model: str
     llm_timeout_seconds: float
+
+    schedule_enabled: bool
+    schedule_start: str
+    schedule_end: str
+    schedule_days: list[int]
+    schedule_timezone: str | None
+    schedule_auto_stop: bool
+
+    diarization_enabled: bool
+    diarization_backend: str
+    diarization_device: str
+    diarization_model: str
+    diarization_hf_token: str | None
 
     openclaw_hook_url: str | None
     openclaw_hook_token: str | None
@@ -109,6 +158,23 @@ def load_config() -> AppConfig:
     llm_model = os.getenv("OFFICE_RECORDER_LLM_MODEL", "llama3.1:70b")
     llm_timeout_seconds = _env_float("OFFICE_RECORDER_LLM_TIMEOUT", 120.0)
 
+    schedule_enabled = _env_bool("OFFICE_RECORDER_SCHEDULE_ENABLED", False)
+    schedule_start = os.getenv("OFFICE_RECORDER_SCHEDULE_START", "09:00")
+    schedule_end = os.getenv("OFFICE_RECORDER_SCHEDULE_END", "18:00")
+    schedule_days = _parse_days(os.getenv("OFFICE_RECORDER_SCHEDULE_DAYS", "mon,tue,wed,thu,fri"))
+    schedule_timezone = os.getenv("OFFICE_RECORDER_SCHEDULE_TZ")
+    if schedule_timezone in (None, "", "local"):
+        schedule_timezone = None
+    schedule_auto_stop = _env_bool("OFFICE_RECORDER_SCHEDULE_AUTO_STOP", True)
+
+    diarization_enabled = _env_bool("OFFICE_RECORDER_DIARIZATION_ENABLED", False)
+    diarization_backend = os.getenv("OFFICE_RECORDER_DIARIZATION_BACKEND", "whisperx")
+    diarization_device = os.getenv("OFFICE_RECORDER_DIARIZATION_DEVICE", "auto")
+    diarization_model = os.getenv("OFFICE_RECORDER_DIARIZATION_MODEL", "pyannote/speaker-diarization")
+    diarization_hf_token = os.getenv("OFFICE_RECORDER_DIARIZATION_HF_TOKEN")
+    if diarization_hf_token == "":
+        diarization_hf_token = None
+
     openclaw_hook_url = os.getenv("OPENCLAW_HOOK_URL")
     if openclaw_hook_url == "":
         openclaw_hook_url = None
@@ -141,6 +207,17 @@ def load_config() -> AppConfig:
         llm_api_key=llm_api_key,
         llm_model=llm_model,
         llm_timeout_seconds=llm_timeout_seconds,
+        schedule_enabled=schedule_enabled,
+        schedule_start=schedule_start,
+        schedule_end=schedule_end,
+        schedule_days=schedule_days,
+        schedule_timezone=schedule_timezone,
+        schedule_auto_stop=schedule_auto_stop,
+        diarization_enabled=diarization_enabled,
+        diarization_backend=diarization_backend,
+        diarization_device=diarization_device,
+        diarization_model=diarization_model,
+        diarization_hf_token=diarization_hf_token,
         openclaw_hook_url=openclaw_hook_url,
         openclaw_hook_token=openclaw_hook_token,
         openclaw_hook_to=openclaw_hook_to,

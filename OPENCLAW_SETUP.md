@@ -11,7 +11,7 @@ OpenClaw Exec must be allowed to run the script. Add the script to your allowlis
 Recommended allowlist entry:
 
 ```
-/Users/<you>/office-recorder/scripts/office_recorder_ctl.sh
+/Users/<you>/Mac-Studio-Listner/scripts/office_recorder_ctl.sh
 ```
 
 ## 3) Use it
@@ -21,6 +21,8 @@ Text OpenClaw:
 - "stop recording"
 - "status"
 - "summarize"
+- "pipeline"
+- "schedule status"
 
 Or use the slash command:
 

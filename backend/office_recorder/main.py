@@ -9,6 +9,8 @@ from .config import load_config
 from .models import StartRecordingRequest, SummarizeRequest
 from .openclaw import send_hook_message
 from .recording import RecorderManager
+from .diarization import Diarizer
+from .scheduler import ScheduleRunner
 from .storage import Storage
 from .transcription import Transcriber, transcribe_day
 from .summarization import Summarizer, summarize_day
@@ -19,12 +21,24 @@ config = load_config()
 storage = Storage(config.data_dir)
 recorder = RecorderManager(config, storage)
 transcriber = Transcriber(config)
+diarizer = Diarizer(config)
 summarizer = Summarizer(config)
+scheduler = ScheduleRunner(config, recorder)
 
 app = FastAPI(title="Office Recorder", version="0.1.0")
 
 static_dir = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+
+@app.on_event("startup")
+def _startup() -> None:
+    scheduler.start()
+
+
+@app.on_event("shutdown")
+def _shutdown() -> None:
+    scheduler.stop()
 
 
 @app.get("/")
@@ -40,6 +54,19 @@ def health() -> dict[str, str]:
 @app.get("/api/recording/status")
 def recording_status() -> dict[str, object]:
     return recorder.status()
+
+
+@app.get("/api/schedule/status")
+def schedule_status() -> dict[str, object]:
+    status = scheduler.status()
+    return {
+        "enabled": status.enabled,
+        "active": status.active,
+        "start": status.start,
+        "end": status.end,
+        "days": status.days,
+        "timezone": status.timezone,
+    }
 
 
 @app.post("/api/recording/start")
@@ -60,7 +87,7 @@ def list_days() -> dict[str, list[str]]:
 
 @app.post("/api/day/{date_str}/transcribe")
 def transcribe(date_str: str, background_tasks: BackgroundTasks) -> dict[str, object]:
-    background_tasks.add_task(transcribe_day, storage, transcriber, date_str)
+    background_tasks.add_task(transcribe_day, storage, transcriber, date_str, diarizer)
     return {"queued": True, "date": date_str}
 
 
@@ -82,7 +109,7 @@ def summarize(date_str: str, payload: SummarizeRequest, background_tasks: Backgr
 @app.post("/api/day/{date_str}/pipeline")
 def pipeline(date_str: str, payload: SummarizeRequest, background_tasks: BackgroundTasks) -> dict[str, object]:
     def _run() -> None:
-        transcribe_day(storage, transcriber, date_str)
+        transcribe_day(storage, transcriber, date_str, diarizer)
         summary = summarize_day(storage, summarizer, date_str)
         if payload.send_to_openclaw:
             text = summary.get("daily_summary", {}).get("overview") or "Daily summary ready."

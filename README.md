@@ -12,6 +12,8 @@ Follow `MAC_STUDIO_SETUP.md` for step-by-step install and launchd auto-start.
 - Daily summary with topics, decisions, and action items.
 - Local web UI plus CLI control script.
 - Optional OpenClaw webhook for sending the daily overview.
+- Optional auto schedule (start/stop by time window).
+- Optional diarization (speaker separation) module.
 
 ## Quick Start (Mac Studio)
 

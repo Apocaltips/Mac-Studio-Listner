@@ -6,6 +6,7 @@ from typing import Any
 
 from .config import AppConfig
 from .storage import Storage
+from .diarization import Diarizer
 from .utils import write_json
 
 
@@ -69,7 +70,12 @@ class Transcriber:
         )
 
 
-def transcribe_day(storage: Storage, transcriber: Transcriber, date_str: str) -> list[Path]:
+def transcribe_day(
+    storage: Storage,
+    transcriber: Transcriber,
+    date_str: str,
+    diarizer: Diarizer | None = None,
+) -> list[Path]:
     day = storage.get_day(date_str)
     audio_files = storage.list_audio_files(date_str)
     written: list[Path] = []
@@ -79,13 +85,28 @@ def transcribe_day(storage: Storage, transcriber: Transcriber, date_str: str) ->
         if transcript_path.exists():
             continue
         result = transcriber.transcribe_file(audio_file)
+        diarization_meta: dict[str, Any] | None = None
+        segments = result.segments
+        if diarizer is not None:
+            try:
+                diarization = diarizer.diarize(str(audio_file), segments)
+                segments = diarization.segments
+                diarization_meta = diarization.meta
+            except Exception as exc:
+                diarization_meta = {
+                    "enabled": True,
+                    "status": "error",
+                    "detail": str(exc),
+                }
         payload = {
             "audio_path": result.audio_path,
             "language": result.language,
             "duration": result.duration,
-            "segments": result.segments,
+            "segments": segments,
             "text": result.text,
         }
+        if diarization_meta is not None:
+            payload["diarization"] = diarization_meta
         write_json(transcript_path, payload)
         written.append(transcript_path)
 
